@@ -5,7 +5,7 @@ const isProduction = window.location.hostname !== 'localhost';
 
 // VATLayer API configuration
 const VATLAYER_API_KEY = '2f5f0b8c606269e043e85f1e449a302a';
-const VATLAYER_BASE_URL = 'http://apilayer.net/api/validate';
+const VATLAYER_BASE_URL = 'https://apilayer.net/api/validate';
 
 console.log('Environment:', isProduction ? 'production' : 'development');
 console.log('Using VATLayer API:', VATLAYER_BASE_URL);
@@ -19,7 +19,10 @@ export const validateVAT = async (vatNumber) => {
         access_key: VATLAYER_API_KEY,
         vat_number: vatNumber
       },
-      timeout: 10000 // 10 second timeout
+      timeout: 10000, // 10 second timeout
+      headers: {
+        'Accept': 'application/json'
+      }
     });
 
     console.log('VATLayer response:', response.data);
