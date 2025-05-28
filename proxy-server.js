@@ -8,6 +8,7 @@ v8.setFlagsFromString('--max-old-space-size=256');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0'; // Bind to all network interfaces
 
 // CORS configuration
 const corsOptions = {
@@ -23,7 +24,11 @@ app.use(express.json({ limit: '1mb' })); // Limit request body size
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // VAT validation endpoint
@@ -94,6 +99,7 @@ app.post('/validate-vat', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
   res.status(500).json({ 
     error: 'Internal server error',
     details: err.message 
@@ -101,8 +107,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const server = app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server running at http://${HOST}:${PORT}`);
+  console.log('Environment:', process.env.NODE_ENV || 'development');
   console.log('CORS enabled for:', corsOptions.origin);
 });
 
