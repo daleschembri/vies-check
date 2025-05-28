@@ -4,7 +4,7 @@ const axios = require('axios');
 
 // Set memory limits
 const v8 = require('v8');
-v8.setFlagsFromString('--max-old-space-size=512');
+v8.setFlagsFromString('--max-old-space-size=256');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -55,7 +55,8 @@ app.post('/validate-vat', async (req, res) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      timeout: 5000 // 5 second timeout
+      timeout: 5000, // 5 second timeout
+      maxContentLength: 1024 * 1024 // 1MB max response size
     });
 
     if (response.data.valid) {

@@ -28,8 +28,8 @@
     "eject": "react-scripts eject",
     "serve": "serve -s build",
     "vercel-build": "react-scripts build",
-    "proxy": "node --max-old-space-size=512 proxy-server.js",
-    "proxy-dev": "nodemon --max-old-space-size=512 proxy-server.js"
+    "proxy": "node --max-old-space-size=256 proxy-server.js",
+    "proxy-dev": "nodemon --max-old-space-size=256 proxy-server.js"
   },
   "eslintConfig": {
     "extends": [
