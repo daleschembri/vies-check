@@ -5,8 +5,16 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS configuration
+const corsOptions = {
+  origin: ['https://vies-check.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
