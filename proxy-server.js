@@ -18,16 +18,19 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'Proxy server is running' });
 });
 
 // VAT validation endpoint
 app.post('/validate-vat', async (req, res) => {
+  console.log('Received VAT validation request:', req.body);
+  
   try {
     const { vatNumber } = req.body;
     
     if (!vatNumber) {
+      console.log('VAT number is missing');
       return res.status(400).json({ error: 'VAT number is required' });
     }
 
@@ -85,6 +88,15 @@ app.post('/validate-vat', async (req, res) => {
       details: error.message 
     });
   }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    details: err.message 
+  });
 });
 
 app.listen(PORT, () => {
