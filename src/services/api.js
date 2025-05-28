@@ -24,16 +24,4 @@ export const validateVAT = async (vatNumber) => {
   } catch (error) {
     throw new Error('Failed to validate VAT number');
   }
-};
-
-export const updateVAT = async (oldVAT, newVAT) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/update_vat`, {
-      old_vat: oldVAT,
-      new_vat: newVAT
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to update VAT number');
-  }
 }; 
