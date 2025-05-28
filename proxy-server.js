@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 
+// Set memory limits
+const v8 = require('v8');
+v8.setFlagsFromString('--max-old-space-size=512');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -15,34 +19,33 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' })); // Limit request body size
 
 // Health check endpoint
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: 'Proxy server is running' });
+  const heapStats = v8.getHeapStatistics();
+  res.json({ 
+    status: 'ok', 
+    message: 'Proxy server is running',
+    memory: {
+      total: Math.round(heapStats.total_heap_size / 1024 / 1024) + 'MB',
+      used: Math.round(heapStats.used_heap_size / 1024 / 1024) + 'MB',
+      limit: Math.round(heapStats.heap_size_limit / 1024 / 1024) + 'MB'
+    }
+  });
 });
 
 // VAT validation endpoint
 app.post('/validate-vat', async (req, res) => {
-  console.log('Received VAT validation request:', req.body);
-  
   try {
     const { vatNumber } = req.body;
     
     if (!vatNumber) {
-      console.log('VAT number is missing');
       return res.status(400).json({ error: 'VAT number is required' });
     }
 
-    console.log('Validating VAT number:', vatNumber);
-
     const countryCode = vatNumber.slice(0, 2);
     const vatNumberWithoutCountry = vatNumber.slice(2);
-
-    console.log('Making request to VIES API with:', {
-      countryCode,
-      vatNumber: vatNumberWithoutCountry
-    });
 
     const response = await axios.post('https://ec.europa.eu/taxation_customs/vies/rest/check-vat-number', {
       countryCode,
@@ -51,10 +54,9 @@ app.post('/validate-vat', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      timeout: 5000 // 5 second timeout
     });
-
-    console.log('VIES API response:', response.data);
 
     if (response.data.valid) {
       return res.json({
@@ -69,13 +71,6 @@ app.post('/validate-vat', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('VAT validation error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
-
     if (error.response) {
       return res.status(error.response.status).json({
         error: 'VIES API Error',
@@ -92,13 +87,22 @@ app.post('/validate-vat', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
   res.status(500).json({ 
     error: 'Internal server error',
     details: err.message 
   });
 });
 
-app.listen(PORT, () => {
+// Start server
+const server = app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
+});
+
+// Handle server shutdown gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 }); 
