@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Paper, Button } from '@mui/material';
 import DataTable from 'react-data-table-component';
 import FileUpload from './FileUpload';
 import VATInfoModal from './VATInfoModal';
-import { validateVAT, updateVAT } from '../services/api';
+import { validateVAT } from '../services/api';
 
 const VATValidator = () => {
   const [data, setData] = useState([]);
-  const [selectedVAT, setSelectedVAT] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [vatInfo, setVatInfo] = useState(null);
 
@@ -27,17 +26,10 @@ const VATValidator = () => {
     }
   };
 
-  const handleUpdateVAT = async (oldVAT, newVAT) => {
-    try {
-      await updateVAT(oldVAT, newVAT);
-      setData(data.map(item => 
-        item.vat_number === oldVAT ? { ...item, vat_number: newVAT } : item
-      ));
-    } catch (error) {
-      console.error('Error updating VAT:', error);
-      // Revert the change in the UI
-      setData([...data]);
-    }
+  const handleUpdateVAT = (oldVAT, newVAT) => {
+    setData(data.map(item => 
+      item.vat_number === oldVAT ? { ...item, vat_number: newVAT } : item
+    ));
   };
 
   const columns = [

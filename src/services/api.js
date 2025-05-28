@@ -1,15 +1,28 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const VIES_API_URL = 'https://ec.europa.eu/taxation_customs/vies/rest/check-vat-number';
 
 export const validateVAT = async (vatNumber) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/validate_vat`, {
-      vat_number: vatNumber
+    const response = await axios.post(VIES_API_URL, {
+      countryCode: vatNumber.slice(0, 2),
+      vatNumber: vatNumber.slice(2)
     });
-    return response.data;
+
+    if (response.data.valid) {
+      return {
+        valid: true,
+        name: response.data.name || '',
+        address: response.data.address || ''
+      };
+    } else {
+      return {
+        valid: false,
+        error: 'VAT Invalid'
+      };
+    }
   } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to validate VAT number');
+    throw new Error('Failed to validate VAT number');
   }
 };
 
