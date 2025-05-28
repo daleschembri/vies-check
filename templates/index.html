@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAT Number Validator</title>
+    
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet">
+    
+    <!-- jQuery and DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .upload-section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .btn {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+        }
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VAT Number Validator</h1>
+        
+        <div class="upload-section">
+            <h2>Upload CSV File</h2>
+            <p>Please upload a CSV file with a "VAT NUM" column</p>
+            <input type="file" id="csvFile" accept=".csv">
+            <button class="btn" onclick="uploadFile()">Upload</button>
+        </div>
+
+        <table id="vatTable" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>VAT Number</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <!-- Modal for displaying VAT information -->
+    <div id="vatModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>VAT Information</h2>
+            <div id="vatInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        let table;
+        
+        $(document).ready(function() {
+            table = $('#vatTable').DataTable({
+                columns: [
+                    { 
+                        data: 'vat_number',
+                        render: function(data, type, row) {
+                            if (type === 'display') {
+                                return `<input type="text" value="${data}" onchange="updateVAT('${data}', this.value)">`;
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        data: null,
+                        render: function(data, type, row) {
+                            return `<button class="btn" onclick="validateVAT('${row.vat_number}')">Get Address</button>`;
+                        }
+                    }
+                ]
+            });
+        });
+
+        function uploadFile() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                
+                // Clear existing data
+                table.clear();
+                
+                // Add new data
+                data.data.forEach(vat => {
+                    table.row.add({
+                        vat_number: vat
+                    });
+                });
+                
+                table.draw();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while uploading the file');
+            });
+        }
+
+        function validateVAT(vatNumber) {
+            fetch('/validate_vat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ vat_number: vatNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const modal = document.getElementById('vatModal');
+                const vatInfo = document.getElementById('vatInfo');
+                
+                if (data.valid) {
+                    vatInfo.innerHTML = `
+                        <p><strong>Company Name:</strong> ${data.name}</p>
+                        <p><strong>Address:</strong> ${data.address}</p>
+                    `;
+                } else {
+                    vatInfo.innerHTML = `<p style="color: red;">${data.error}</p>`;
+                }
+                
+                modal.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while validating the VAT number');
+            });
+        }
+
+        function updateVAT(oldVAT, newVAT) {
+            fetch('/update_vat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    old_vat: oldVAT,
+                    new_vat: newVAT
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    // Refresh the table to show the original value
+                    table.ajax.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the VAT number');
+                table.ajax.reload();
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('vatModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('vatModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 
