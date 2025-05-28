@@ -1,0 +1,14 @@
+{
+  "name": "vat-validator-proxy",
+  "version": "1.0.0",
+  "description": "Proxy server for VAT validation",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.4.0"
+  }
+} 

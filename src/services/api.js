@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api/validate-vat'
-  : 'http://localhost:3001/api/validate-vat';
+const PROXY_URL = process.env.NODE_ENV === 'production'
+  ? 'https://your-proxy-server-url.onrender.com/validate-vat'  // Replace with your actual proxy server URL
+  : 'http://localhost:3001/validate-vat';
 
 export const validateVAT = async (vatNumber) => {
   try {
-    const response = await axios.post(API_URL, {
+    const response = await axios.post(PROXY_URL, {
       vatNumber
     }, {
       headers: {
