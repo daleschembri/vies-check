@@ -2,53 +2,51 @@ import axios from 'axios';
 
 // Determine if we're in production based on the URL
 const isProduction = window.location.hostname !== 'localhost';
-const PROXY_URL = isProduction
-  ? 'https://vat-validator-proxy.onrender.com/validate-vat'
-  : 'http://localhost:3001/validate-vat';
+
+// VATLayer API configuration
+const VATLAYER_API_KEY = '2f5f0b8c606269e043e85f1e449a302a';
+const VATLAYER_BASE_URL = 'http://apilayer.net/api/validate';
 
 console.log('Environment:', isProduction ? 'production' : 'development');
-console.log('Using proxy URL:', PROXY_URL);
+console.log('Using VATLayer API:', VATLAYER_BASE_URL);
 
 export const validateVAT = async (vatNumber) => {
   try {
     console.log('Validating VAT number:', vatNumber);
 
-    const response = await axios.post(PROXY_URL, {
-      vatNumber
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
+    const response = await axios.get(VATLAYER_BASE_URL, {
+      params: {
+        access_key: VATLAYER_API_KEY,
+        vat_number: vatNumber
       },
       timeout: 10000 // 10 second timeout
     });
 
-    console.log('Proxy response:', response.data);
+    console.log('VATLayer response:', response.data);
 
     if (response.data.valid) {
       return {
         valid: true,
-        name: response.data.name || '',
-        address: response.data.address || ''
+        name: response.data.company_name || '',
+        address: response.data.company_address || '',
+        country: response.data.country_code || '',
+        vatNumber: response.data.vat_number || vatNumber
       };
     } else {
       return {
         valid: false,
-        error: response.data.error || 'VAT Invalid'
+        error: response.data.error?.info || 'Invalid VAT number'
       };
     }
   } catch (error) {
     console.error('VAT validation error:', {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status,
-      url: PROXY_URL
+      status: error.response?.status
     });
 
     if (error.response?.data?.error) {
-      throw new Error(error.response.data.error);
-    }
-    if (error.response?.data?.details) {
-      throw new Error(error.response.data.details);
+      throw new Error(error.response.data.error.info || 'API Error');
     }
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timed out. Please try again.');
