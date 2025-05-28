@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Typography, CircularProgress } from '@mui/material';
+import { Box, Button, TextField, Typography, CircularProgress, Paper } from '@mui/material';
 import { validateVAT } from '../services/api';
 import VATTable from './VATTable';
+import FileUpload from './FileUpload';
 
 const VATValidator = () => {
   const [vatNumber, setVatNumber] = useState('');
@@ -27,6 +28,16 @@ const VATValidator = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileUpload = (vatNumbers) => {
+    const newRecords = vatNumbers.map(vat => ({
+      vatNumber: vat,
+      valid: false,
+      name: '',
+      address: ''
+    }));
+    setRecords(prev => [...prev, ...newRecords]);
   };
 
   const handleValidateSelected = async (selectedRows) => {
@@ -63,6 +74,10 @@ const VATValidator = () => {
       <Typography variant="h4" gutterBottom>
         VAT Number Validator
       </Typography>
+
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <FileUpload onUpload={handleFileUpload} />
+      </Paper>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <TextField
