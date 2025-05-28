@@ -1,89 +1,92 @@
 import React, { useState } from 'react';
-import { Box, Paper, Button } from '@mui/material';
-import DataTable from 'react-data-table-component';
-import FileUpload from './FileUpload';
-import VATInfoModal from './VATInfoModal';
+import { Box, Button, TextField, Typography, CircularProgress } from '@mui/material';
 import { validateVAT } from '../services/api';
+import VATTable from './VATTable';
 
 const VATValidator = () => {
-  const [data, setData] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [vatInfo, setVatInfo] = useState(null);
+  const [vatNumber, setVatNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [records, setRecords] = useState([]);
+  const [error, setError] = useState('');
 
-  const handleFileUpload = (vatNumbers) => {
-    setData(vatNumbers.map(vat => ({ vat_number: vat })));
-  };
+  const handleValidate = async () => {
+    if (!vatNumber) {
+      setError('Please enter a VAT number');
+      return;
+    }
 
-  const handleValidateVAT = async (vatNumber) => {
+    setLoading(true);
+    setError('');
+
     try {
-      const response = await validateVAT(vatNumber);
-      setVatInfo(response);
-      setModalOpen(true);
-    } catch (error) {
-      console.error('Error validating VAT:', error);
-      setVatInfo({ error: 'Failed to validate VAT number' });
-      setModalOpen(true);
+      const result = await validateVAT(vatNumber);
+      setRecords(prev => [...prev, { vatNumber, ...result }]);
+      setVatNumber('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpdateVAT = (oldVAT, newVAT) => {
-    setData(data.map(item => 
-      item.vat_number === oldVAT ? { ...item, vat_number: newVAT } : item
-    ));
+  const handleValidateSelected = async (selectedRows) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const updatedRecords = [...records];
+      for (const row of selectedRows) {
+        if (!row.valid) {
+          const result = await validateVAT(row.vatNumber);
+          const index = updatedRecords.findIndex(r => r.vatNumber === row.vatNumber);
+          if (index !== -1) {
+            updatedRecords[index] = { ...row, ...result };
+          }
+        }
+      }
+      setRecords(updatedRecords);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const columns = [
-    {
-      name: 'VAT Number',
-      selector: row => row.vat_number,
-      cell: row => (
-        <input
-          type="text"
-          value={row.vat_number}
-          onChange={(e) => handleUpdateVAT(row.vat_number, e.target.value)}
-          style={{
-            padding: '8px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            width: '100%'
-          }}
-        />
-      ),
-    },
-    {
-      name: 'Actions',
-      cell: row => (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => handleValidateVAT(row.vat_number)}
-        >
-          Get Address
-        </Button>
-      ),
-    },
-  ];
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleValidate();
+    }
+  };
 
   return (
-    <Box>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <FileUpload onUpload={handleFileUpload} />
-      </Paper>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        VAT Number Validator
+      </Typography>
 
-      <Paper sx={{ p: 3 }}>
-        <DataTable
-          columns={columns}
-          data={data}
-          pagination
-          highlightOnHover
-          responsive
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <TextField
+          fullWidth
+          label="VAT Number"
+          value={vatNumber}
+          onChange={(e) => setVatNumber(e.target.value)}
+          onKeyPress={handleKeyPress}
+          error={!!error}
+          helperText={error}
+          disabled={loading}
         />
-      </Paper>
+        <Button
+          variant="contained"
+          onClick={handleValidate}
+          disabled={loading || !vatNumber}
+        >
+          {loading ? <CircularProgress size={24} /> : 'Validate'}
+        </Button>
+      </Box>
 
-      <VATInfoModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        vatInfo={vatInfo}
+      <VATTable 
+        data={records} 
+        onValidateSelected={handleValidateSelected}
       />
     </Box>
   );
