@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const VIES_API_URL = 'https://ec.europa.eu/taxation_customs/vies/rest/check-vat-number';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,4 +42,4 @@ module.exports = async (req, res) => {
       details: error.message 
     });
   }
-}; 
+} 
