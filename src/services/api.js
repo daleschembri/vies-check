@@ -6,6 +6,10 @@ export const validateVAT = async (vatNumber) => {
   try {
     const response = await axios.post(API_URL, {
       vatNumber
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (response.data.valid) {
@@ -22,6 +26,9 @@ export const validateVAT = async (vatNumber) => {
     }
   } catch (error) {
     console.error('VAT validation error:', error);
-    throw new Error(error.response?.data?.error || 'Failed to validate VAT number');
+    if (error.response) {
+      throw new Error(error.response.data.error || 'Failed to validate VAT number');
+    }
+    throw new Error('Failed to validate VAT number');
   }
 }; 
