@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 import pandas as pd
 import requests
 import json
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Store VAT numbers in memory (in a real application, you'd use a database)
 vat_data = []
