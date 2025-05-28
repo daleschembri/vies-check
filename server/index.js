@@ -22,14 +22,56 @@ app.post('/api/validate-vat', async (req, res) => {
       return res.status(400).json({ error: 'VAT number is required' });
     }
 
-    const response = await axios.post('https://ec.europa.eu/taxation_customs/vies/rest/check-vat-number', {
-      countryCode: vatNumber.slice(0, 2),
-      vatNumber: vatNumber.slice(2)
+    console.log('Validating VAT number:', vatNumber);
+
+    const countryCode = vatNumber.slice(0, 2);
+    const vatNumberWithoutCountry = vatNumber.slice(2);
+
+    console.log('Making request to VIES API with:', {
+      countryCode,
+      vatNumber: vatNumberWithoutCountry
     });
 
-    return res.json(response.data);
+    const response = await axios.post('https://ec.europa.eu/taxation_customs/vies/rest/check-vat-number', {
+      countryCode,
+      vatNumber: vatNumberWithoutCountry
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    console.log('VIES API response:', response.data);
+
+    if (response.data.valid) {
+      return res.json({
+        valid: true,
+        name: response.data.name || '',
+        address: response.data.address || ''
+      });
+    } else {
+      return res.json({
+        valid: false,
+        error: 'VAT Invalid'
+      });
+    }
   } catch (error) {
-    console.error('VAT validation error:', error);
+    console.error('VAT validation error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
+
+    // If the VIES API returns an error, forward it to the client
+    if (error.response) {
+      return res.status(error.response.status).json({
+        error: 'VIES API Error',
+        details: error.response.data
+      });
+    }
+
     return res.status(500).json({ 
       error: 'Failed to validate VAT number',
       details: error.message 

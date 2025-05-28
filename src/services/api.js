@@ -23,13 +23,21 @@ export const validateVAT = async (vatNumber) => {
     } else {
       return {
         valid: false,
-        error: 'VAT Invalid'
+        error: response.data.error || 'VAT Invalid'
       };
     }
   } catch (error) {
-    console.error('VAT validation error:', error);
-    if (error.response) {
-      throw new Error(error.response.data.error || 'Failed to validate VAT number');
+    console.error('VAT validation error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+
+    if (error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    if (error.response?.data?.details) {
+      throw new Error(error.response.data.details);
     }
     throw new Error('Failed to validate VAT number');
   }
