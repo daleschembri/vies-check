@@ -6,7 +6,6 @@ import Papa from 'papaparse';
 
 const VATTable = ({ data, onValidateSelected }) => {
   const [selectedRows, setSelectedRows] = useState([]);
-  const [toggleCleared, setToggleCleared] = useState(false);
 
   const handleSelectAll = (state) => {
     if (state.selectedRows.length === 0) {
@@ -117,7 +116,6 @@ const VATTable = ({ data, onValidateSelected }) => {
           indeterminate: selectedRows.length > 0 && selectedRows.length < data.length
         }}
         onSelectedRowsChange={handleRowSelected}
-        clearSelectedRows={toggleCleared}
         pagination
         highlightOnHover
         pointerOnHover
