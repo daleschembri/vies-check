@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = '/api/validate-vat';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api/validate-vat'
+  : 'http://localhost:3001/api/validate-vat';
 
 export const validateVAT = async (vatNumber) => {
   try {
